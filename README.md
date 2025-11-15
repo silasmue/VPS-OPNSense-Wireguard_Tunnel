@@ -92,3 +92,53 @@ iptables-save | sudo tee /etc/iptables/rules.v4
 ```
 
 ## OPNSense Wireguard Setup
+
+VPN -> WireGuard -> Instances
+ - Create an instance:
+   - **Listen Port**: <can be let empty>
+   - **Interface addresses**: `10.100.0.2/30`
+   - **Public Key**: Generate using the button, and insert that key into the `/etc/wireguard/wg0.conf` on the VPS
+   - **Private Key**: Automatically filled in when generating the public key
+   - Check **Disable Routes**
+
+VPN -> WireGuard -> Peer
+ - Create a peer:
+   - **Public Key**: `<VPS_PUBLIC_KEY>`
+   - **Preshared Key**: `<VPS_PRESHARED_KEY>` *this is the same on both devices*
+   - **Allowed IPs**: `0.0.0.0/0` `::0/0`
+   - **Endpoint Address**: `<VPS_PUBLIC_IP>`
+   - **Endpoint Port**: `<WIREGUARD_PORT>` *see port of `wg show` on VPS*
+   - **Keepalive**: 25
+  
+After these steps the tunnel should be working, this can be checked in VPN -> Wireguard -> Status, when both, *peer* and *instance* have a green mark.
+When the tunnel is running, the interface can be created:
+Interfaces -> Assignments -> Assign a new interface
+ - Select **Device** and chose `wg0 (WireGuard - WG_0)
+ - Select the newly created interface and check **Dynamic gateway policy** and press **Save**
+*OPNSense should auto-create a new gateway names `WG_0_GW`, check that System -> Gateways -> Configuration*
+
+## OPNSense NAT and Firewall rules
+
+Firewall -> NAT -> Port Forward -> Add
+ - **Interface**: `WG_0`
+ - **Protocol**: `TCP`
+ - **Source**: `any`
+ - **Destination**: `WG_0 address`
+ - **Destination port**: `HTTP`
+ - **Redirect target IP**: `10.0.2.2`
+ - **Redirect target port**: `HTTP`
+ - **Filter rule association**: `None` *in the next step a custom rule is created*
+ - **NAT reflection**: `disabled`
+
+Firewall -> Rules -> WG_0
+ - **Action**: Pass
+ - **Interface**: `WG_0`
+ - **Protocol**: `TCP`
+ - **Source**: `any`
+ - **Destination**: `any`
+ - **Gateway**: `default` *NOT WG_0_GW*
+ - **Advanced Options**: check
+ - **Reply-to**: `WG_0_GW` *This does the magic*
+
+It could be necessary that wildcard rules for the interface of the subnet in which the NGINX-server is have to be created and a wildcard rule for the `WG_0` interface. When the setup works try to tighten firewall rules to enhance security.
+
