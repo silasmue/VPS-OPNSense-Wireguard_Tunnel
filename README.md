@@ -135,10 +135,19 @@ Firewall -> Rules -> WG_0
  - **Interface**: `WG_0`
  - **Protocol**: `TCP`
  - **Source**: `any`
+ - **Destination**: `WG_0 address`
+ - **Destination port**: `HTTP`
+ - **Gateway**: `WG_0_GW`
+
+ - Firewall -> Rules -> WG_0
+ - **Action**: Pass
+ - **Interface**: `WG_0`
+ - **Protocol**: `IPv4`
+ - **Source**: `any`
  - **Destination**: `any`
- - **Gateway**: `default` *NOT WG_0_GW*
+ - **Gateway**: `default` *NOT `WG_0_GW*
  - **Advanced Options**: check
  - **Reply-to**: `WG_0_GW` *This does the magic*
 
-It could be necessary that wildcard rules for the interface of the subnet in which the NGINX-server is have to be created and a wildcard rule for the `WG_0` interface. When the setup works try to tighten firewall rules to enhance security.
+It could be necessary that wildcard rules for the interface of the subnet in which the NGINX-server is have to be created. When the setup works try to tighten firewall rules to enhance security and repeat those steps for HTTPS and any other port you want to forward.
 
