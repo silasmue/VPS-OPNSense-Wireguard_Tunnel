@@ -42,7 +42,7 @@ After that, the `/etc/wireguard/wg0.conf` can be edited as follows:
 Address    = 10.99.0.1/30
 ListenPort = 55107
 PrivateKey = <VPS_PRIVATE_KEY>
-MTU        = 1420
+MTU        = 1380
 
 [Peer]
 PublicKey           = <OPNSENSE_PUBLIC_KEY> # Fill in after the next step
@@ -85,6 +85,10 @@ iptables -t nat -A PREROUTING -i ens6 -p tcp --dport 80 \
   -j DNAT --to-destination 10.99.0.2
 
 iptables -t nat -A POSTROUTING -s 10.99.0.0/30 -o ens6 -j MASQUERADE
+
+# This is crucial, to not get weird errors, 1300 is a bit conservative you could get away with 1340 which would improve bandwidth, when the tunnel MTU is 1380
+iptables -t mangle -A FORWARD -o wg0 -p tcp --tcp-flags SYN,RST SYN \
+    -j TCPMSS --set-mss 1300
 ```
 The config can be made persistend with:
 ```
@@ -99,6 +103,7 @@ VPN -> WireGuard -> Instances
    - **Interface addresses**: `10.100.0.2/30`
    - **Public Key**: Generate using the button, and insert that key into the `/etc/wireguard/wg0.conf` on the VPS
    - **Private Key**: Automatically filled in when generating the public key
+   - Click *Advanced* at the top and set **MTU**: 1380
    - Check **Disable Routes**
 
 VPN -> WireGuard -> Peer
